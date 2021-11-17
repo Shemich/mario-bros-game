@@ -22,6 +22,7 @@ import com.badlogic.gdx.utils.viewport.StretchViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.shemich.mariobros.MarioBros;
 import com.shemich.mariobros.Scenes.Hud;
+import com.shemich.mariobros.Sprites.Goomba;
 import com.shemich.mariobros.Sprites.Mario;
 import com.shemich.mariobros.Tools.B2WorldCreator;
 import com.shemich.mariobros.Tools.WorldContactListener;
@@ -35,7 +36,7 @@ public class PlayScreen implements Screen {
     private OrthographicCamera gamecam;
     private Viewport gamePort;
     private Hud hud;
-  
+
 
     //Tiled map variables
     private TmxMapLoader mapLoader;
@@ -48,7 +49,8 @@ public class PlayScreen implements Screen {
     
     //sprites
     private Mario player;
-    
+    private Goomba goomba;
+
     private Music music;
 
     public PlayScreen(MarioBros game) {
@@ -75,19 +77,21 @@ public class PlayScreen implements Screen {
 
         //создает наш Box2D мир, устанавливаем нет гравитации в X, -10
         world = new World(new Vector2(0,-10),true);
-
+        //allows for debug lines of our box2d world
         b2dr = new Box2DDebugRenderer();
 
-        new B2WorldCreator(world,map);
+        new B2WorldCreator(this);
 
-        //создаем марио в нашем мире
-        player = new Mario(world, this);
+        //create mario in our game world
+        player = new Mario(this);
 
         world.setContactListener(new WorldContactListener());
 
         music = MarioBros.manager.get("audio/music/mario_music.ogg", Music.class);
         music.setLooping(true);
         music.play();
+
+        goomba = new Goomba(this,.32f,.32f);
     }
 
     public TextureAtlas getAtlas() {
@@ -117,9 +121,11 @@ public class PlayScreen implements Screen {
         world.step(1/60f,6,2);
 
         player.update(dt);
+        goomba.update(dt);
         hud.update(dt);
 
         gamecam.position.x = player.b2body.getPosition().x;
+        //gamecam.position.y = player.b2body.getPosition().y;
 
         //обновляет нашу геймкамеру с корректными кооридантами после изменений
         gamecam.update();
@@ -142,6 +148,7 @@ public class PlayScreen implements Screen {
         game.batch.setProjectionMatrix(gamecam.combined);
         game.batch.begin();
         player.draw(game.batch);
+        goomba.draw(game.batch);
         game.batch.end();
 
         //Set our batch to now draw what the Hud camera sees.
@@ -151,7 +158,16 @@ public class PlayScreen implements Screen {
 
     @Override
     public void resize(int width, int height) {
+        //update our game viewport
         gamePort.update(width, height);
+    }
+
+    public TiledMap getMap() {
+        return map;
+    }
+
+    public World getWorld(){
+        return world;
     }
 
     @Override
